@@ -4,13 +4,13 @@
 import { logger } from '@activepieces/server-shared'
 import { MigrationInterface, QueryRunner } from 'typeorm'
 
-export class SwitchToRouter1730999337 implements MigrationInterface {
+export class SwitchToRouter1731019013340 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         const flowVersionIds = await queryRunner.query(
             'SELECT id FROM flow_version WHERE "schemaVersion" IS NULL',
         )
         logger.info(
-            'SwitchToRouter1730999337: found ' +
+            'SwitchToRouter1731019013340: found ' +
             flowVersionIds.length +
             ' versions',
         )
@@ -21,32 +21,26 @@ export class SwitchToRouter1730999337 implements MigrationInterface {
                 [id],
             )
             if (flowVersion.length > 0) {
-                const updated = traverseAndUpdateSubFlow(
+                traverseAndUpdateSubFlow(
                     convertBranchToRouter,
                     flowVersion[0].trigger,
                 )
-                if (updated) {
-                    await queryRunner.query(
-                        'UPDATE flow_version SET trigger = $1 WHERE id = $2',
-                        [flowVersion[0].trigger, flowVersion[0].id],
-                    )
-                }
-            }
-            updatedFlows++
-            if (updatedFlows % 100 === 0) {
-                logger.info(
-                    'SwitchToRouter1730999337: ' +
-                    updatedFlows +
-                    ' flows updated',
+                await queryRunner.query(
+                    'UPDATE flow_version SET trigger = $1, "schemaVersion" = $3 WHERE id = $2',
+                    [flowVersion[0].trigger, flowVersion[0].id, '1'],
                 )
             }
+            updatedFlows++
         }
 
-        logger.info('SwitchToRouter1730999337: up')
+        logger.info({
+            name: 'SwitchToRouter1731019013340: up',
+            updatedFlows,
+        })
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        throw new Error('SwitchToRouter1730999337: down - no rollback supported')
+        throw new Error('SwitchToRouter1731019013340: down - no rollback supported')
     }
 }
 
